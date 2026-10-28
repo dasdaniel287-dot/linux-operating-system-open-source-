@@ -1,0 +1,436 @@
+import React, { useState } from 'react';
+import { 
+  Boxes, 
+  Download, 
+  Copy, 
+  Check, 
+  Terminal, 
+  Sparkles, 
+  ShieldCheck, 
+  Layers,
+  Cpu,
+  FileCode
+} from 'lucide-react';
+
+interface ToolOption {
+  id: string;
+  name: string;
+  category: string;
+  desc: string;
+  defaultSelected: boolean;
+}
+
+const AVAILABLE_TOOLS: ToolOption[] = [
+  { id: 'git_gh', name: 'Git & GitHub CLI (gh)', category: 'VCS', desc: 'Core version control and official GitHub CLI', defaultSelected: true },
+  { id: 'neovim', name: 'Neovim Editor', category: 'Editor', desc: 'Hyperextensible Vim-based modern text editor', defaultSelected: true },
+  { id: 'starship', name: 'Starship Prompt', category: 'Shell', desc: 'Blazing-fast cross-shell prompt with git status', defaultSelected: true },
+  { id: 'fastfetch', name: 'Fastfetch System Info', category: 'Utility', desc: 'Hardware & OS benchmark terminal fetcher', defaultSelected: true },
+  { id: 'btop', name: 'Btop Resource Monitor', category: 'Monitor', desc: 'Real-time CPU, RAM, disk and GPU monitor', defaultSelected: true },
+  { id: 'ripgrep', name: 'Ripgrep (rg)', category: 'Search', desc: 'Fast recursive regex search engine in Rust', defaultSelected: true },
+  { id: 'fzf', name: 'FZF Fuzzy Finder', category: 'Search', desc: 'Interactive command-line fuzzy finder', defaultSelected: true },
+  { id: 'bat', name: 'Bat (Cat with syntax)', category: 'Utility', desc: 'Syntax-highlighted file viewer with git integration', defaultSelected: true },
+  { id: 'eza', name: 'Eza (Modern ls)', category: 'Utility', desc: 'Modern replacement for ls with icons and git status', defaultSelected: true },
+  { id: 'lazygit', name: 'Lazygit Terminal UI', category: 'VCS', desc: 'Terminal user interface for git commands', defaultSelected: false },
+  { id: 'docker', name: 'Docker Community Edition', category: 'Containers', desc: 'Container engine with Docker Compose v2', defaultSelected: false },
+  { id: 'ollama', name: 'Ollama Local AI', category: 'AI', desc: 'Run Llama 3, DeepSeek, and Mistral LLMs locally', defaultSelected: false },
+];
+
+export const BootstrapBuilderView: React.FC = () => {
+  const [distro, setDistro] = useState<'ubuntu' | 'fedora' | 'arch' | 'alpine'>('ubuntu');
+  const [shell, setShell] = useState<'bash' | 'zsh' | 'fish'>('bash');
+  const [selectedToolIds, setSelectedToolIds] = useState<Set<string>>(
+    new Set(AVAILABLE_TOOLS.filter(t => t.defaultSelected).map(t => t.id))
+  );
+
+  const [setupSshKey, setSetupSshKey] = useState<boolean>(true);
+  const [gitUserEmail, setGitUserEmail] = useState<string>('developer@example.com');
+  const [gitUserName, setGitUserName] = useState<string>('Linux Developer');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const toggleTool = (id: string) => {
+    const next = new Set(selectedToolIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedToolIds(next);
+  };
+
+  const handleCopy = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleDownload = (filename: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/x-shellscript;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Generate customized bootstrap script
+  const generateScript = () => {
+    let pkgInstallCmd = '';
+    let pkgUpdateCmd = '';
+    let buildToolsCmd = '';
+
+    if (distro === 'ubuntu') {
+      pkgUpdateCmd = 'sudo apt update && sudo apt upgrade -y';
+      pkgInstallCmd = 'sudo apt install -y';
+      buildToolsCmd = 'sudo apt install -y build-essential cmake ninja-build curl wget git pkg-config';
+    } else if (distro === 'fedora') {
+      pkgUpdateCmd = 'sudo dnf upgrade --refresh -y';
+      pkgInstallCmd = 'sudo dnf install -y';
+      buildToolsCmd = 'sudo dnf groupinstall -y "Development Tools" && sudo dnf install -y cmake ninja-build curl git';
+    } else if (distro === 'arch') {
+      pkgUpdateCmd = 'sudo pacman -Syu --noconfirm';
+      pkgInstallCmd = 'sudo pacman -S --noconfirm --needed';
+      buildToolsCmd = 'sudo pacman -S --noconfirm --needed base-devel git cmake ninja curl';
+    } else {
+      pkgUpdateCmd = 'sudo apk update && sudo apk upgrade';
+      pkgInstallCmd = 'sudo apk add';
+      buildToolsCmd = 'sudo apk add build-base git cmake ninja curl';
+    }
+
+    const lines: string[] = [];
+    lines.push(`#!/usr/bin/env bash
+# ==============================================================================
+# Linux Developer Workstation & GitHub Bootstrap Script
+# Distribution: ${distro.toUpperCase()} | Shell: ${shell}
+# Generated by OpenLinux GitForge
+# ==============================================================================
+
+set -euo pipefail
+
+CYAN='\\033[0;36m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+RED='\\033[0;31m'
+NC='\\033[0m'
+
+echo -e "\${CYAN}=====================================================\${NC}"
+echo -e "\${CYAN}  Initiating Linux Workstation Setup for ${distro.toUpperCase()}\${NC}"
+echo -e "\${CYAN}=====================================================\${NC}"
+
+# Ensure ~/.local/bin exists and is exported
+mkdir -p "$HOME/.local/bin"
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# 1. Update Package Mirrors
+echo -e "\\n\${YELLOW}[1/4] Updating package indexes...\${NC}"
+${pkgUpdateCmd}
+
+# 2. Install Essential Build Toolchains
+echo -e "\\n\${YELLOW}[2/4] Installing core compilation toolchain...\${NC}"
+${buildToolsCmd}
+
+# 3. Installing Selected Open-Source Developer Tools
+echo -e "\\n\${YELLOW}[3/4] Installing developer utilities...\${NC}"
+`);
+
+    if (selectedToolIds.has('git_gh')) {
+      lines.push(`# Git & GitHub CLI
+${pkgInstallCmd} git
+if ! command -v gh &>/dev/null; then
+    echo "Installing GitHub CLI..."
+    ${distro === 'arch' ? 'sudo pacman -S --noconfirm github-cli' : 
+      distro === 'fedora' ? 'sudo dnf install -y gh' :
+      '(type -p wget >/dev/null || sudo apt install wget -y) && wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null && sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null && sudo apt update && sudo apt install gh -y'}
+fi
+`);
+    }
+
+    if (selectedToolIds.has('neovim')) {
+      lines.push(`# Neovim
+echo "Installing Neovim..."
+${pkgInstallCmd} neovim
+`);
+    }
+
+    if (selectedToolIds.has('fastfetch')) {
+      lines.push(`# Fastfetch
+echo "Installing Fastfetch..."
+${pkgInstallCmd} fastfetch || curl -sLO "https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-amd64.tar.gz" && tar -xzf fastfetch-linux-amd64.tar.gz && sudo install -m 755 fastfetch-linux-amd64/usr/bin/fastfetch /usr/local/bin/ && rm -rf fastfetch-linux-amd64*
+`);
+    }
+
+    if (selectedToolIds.has('btop')) {
+      lines.push(`# Btop
+echo "Installing Btop resource monitor..."
+${pkgInstallCmd} btop
+`);
+    }
+
+    if (selectedToolIds.has('ripgrep')) {
+      lines.push(`# Ripgrep
+echo "Installing Ripgrep..."
+${pkgInstallCmd} ripgrep
+`);
+    }
+
+    if (selectedToolIds.has('fzf')) {
+      lines.push(`# FZF
+echo "Installing FZF fuzzy finder..."
+${pkgInstallCmd} fzf
+`);
+    }
+
+    if (selectedToolIds.has('bat')) {
+      lines.push(`# Bat
+echo "Installing Bat..."
+${distro === 'ubuntu' ? 'sudo apt install -y bat && sudo ln -sf /usr/bin/batcat /usr/local/bin/bat' : `${pkgInstallCmd} bat`}
+`);
+    }
+
+    if (selectedToolIds.has('eza')) {
+      lines.push(`# Eza
+echo "Installing Eza modern ls..."
+${distro === 'arch' ? 'sudo pacman -S --noconfirm eza' : 
+  distro === 'fedora' ? 'sudo dnf install -y eza' :
+  'cargo install eza || echo "Install cargo or configure eza apt repo"'}
+`);
+    }
+
+    if (selectedToolIds.has('starship')) {
+      lines.push(`# Starship Prompt
+echo "Installing Starship prompt..."
+curl -sS https://starship.rs/install.sh | sh -s -- -y
+echo 'eval "$(starship init bash)"' >> "$HOME/.bashrc"
+`);
+    }
+
+    if (selectedToolIds.has('docker')) {
+      lines.push(`# Docker Community Edition
+echo "Installing Docker..."
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker "$USER"
+`);
+    }
+
+    if (selectedToolIds.has('ollama')) {
+      lines.push(`# Ollama AI
+echo "Installing Ollama local LLM engine..."
+curl -fsSL https://ollama.com/install.sh | sh
+`);
+    }
+
+    lines.push(`
+# 4. GitHub & Git Identity Configuration
+echo -e "\\n\${YELLOW}[4/4] Configuring Git & GitHub authentication...\${NC}"
+git config --global user.name "${gitUserName}"
+git config --global user.email "${gitUserEmail}"
+git config --global init.defaultBranch main
+git config --global core.editor nvim || git config --global core.editor nano
+`);
+
+    if (setupSshKey) {
+      lines.push(`
+# Setup High-Security Ed25519 SSH Key
+SSH_KEY="$HOME/.ssh/id_ed25519"
+if [ ! -f "$SSH_KEY" ]; then
+    echo "Generating new Ed25519 SSH key for GitHub..."
+    ssh-keygen -t ed25519 -C "${gitUserEmail}" -f "$SSH_KEY" -N ""
+    eval "$(ssh-agent -s)"
+    ssh-add "$SSH_KEY"
+    echo -e "\${GREEN}✓ Your public SSH key:\${NC}"
+    cat "\${SSH_KEY}.pub"
+    echo -e "\\n\${YELLOW}Copy this key and paste it into: https://github.com/settings/keys\${NC}"
+fi
+`);
+    }
+
+    lines.push(`
+echo -e "\\n\${GREEN}=====================================================\${NC}"
+echo -e "\${GREEN}  Workstation bootstrap complete! Restart your shell.\${NC}"
+echo -e "\${GREEN}=====================================================\${NC}"
+`);
+
+    return lines.join('\n');
+  };
+
+  const scriptContent = generateScript();
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      {/* Header */}
+      <div className="border-b border-slate-800 pb-6">
+        <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+          <span>Idempotent Automation</span>
+          <span aria-hidden="true">·</span>
+          <span>1-Click Dev Machine Setup</span>
+        </div>
+        <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight mt-1">
+          Linux Workstation Bootstrap Builder
+        </h1>
+        <p className="text-sm text-slate-400 mt-1 max-w-2xl">
+          Multi-select open-source software and GitHub developer configurations to generate an automated, self-contained shell script to provision any fresh Linux install.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Config Panel */}
+        <div className="lg:col-span-5 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-6">
+          <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+            <Boxes className="w-4 h-4 text-cyan-400" />
+            <span>Customize Setup Script</span>
+          </h2>
+
+          {/* Distro Select */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-300 block">Target Linux Operating System</label>
+            <div className="grid grid-cols-4 gap-1.5">
+              {(['ubuntu', 'fedora', 'arch', 'alpine'] as const).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDistro(d)}
+                  className={`py-2 text-xs font-semibold rounded-lg capitalize border transition-colors ${
+                    distro === d
+                      ? 'bg-cyan-500/15 border-cyan-400 text-cyan-300'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tool Multi-Select Grid */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-slate-300 block">
+                Select Open-Source Packages ({selectedToolIds.size} selected)
+              </label>
+              <button
+                onClick={() => {
+                  if (selectedToolIds.size === AVAILABLE_TOOLS.length) {
+                    setSelectedToolIds(new Set());
+                  } else {
+                    setSelectedToolIds(new Set(AVAILABLE_TOOLS.map(t => t.id)));
+                  }
+                }}
+                className="text-xs text-cyan-400 hover:underline"
+              >
+                {selectedToolIds.size === AVAILABLE_TOOLS.length ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
+
+            <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              {AVAILABLE_TOOLS.map(tool => {
+                const isSelected = selectedToolIds.has(tool.id);
+                return (
+                  <div
+                    key={tool.id}
+                    onClick={() => toggleTool(tool.id)}
+                    className={`p-2.5 rounded-xl border text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-cyan-500/10 border-cyan-500/30 text-slate-100'
+                        : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-200">{tool.name}</div>
+                      <div className="text-[11px] text-slate-400 truncate">{tool.desc}</div>
+                    </div>
+                    <div className="shrink-0 ml-3">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                        isSelected ? 'bg-cyan-400 border-cyan-400 text-slate-950' : 'border-slate-700 bg-slate-900'
+                      }`}>
+                        {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Git & SSH Setup Inputs */}
+          <div className="space-y-3 pt-3 border-t border-slate-800">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              Git & GitHub Identity Config
+            </span>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400">Git Name</label>
+                <input
+                  type="text"
+                  value={gitUserName}
+                  onChange={e => setGitUserName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-slate-400">Git Email</label>
+                <input
+                  type="email"
+                  value={gitUserEmail}
+                  onChange={e => setGitUserEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:border-cyan-400 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={setupSshKey}
+                onChange={e => setSetupSshKey(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-800 text-cyan-500 focus:ring-0 bg-slate-950"
+              />
+              <span>Generate Ed25519 SSH key pair for GitHub authentication</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Right Preview Panel */}
+        <div className="lg:col-span-7 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
+              <FileCode className="w-4 h-4 text-cyan-400" />
+              <span>bootstrap_linux_dev.sh</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleCopy(scriptContent, 'bootstrap')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
+              >
+                {copiedKey === 'bootstrap' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedKey === 'bootstrap' ? 'Copied' : 'Copy Script'}</span>
+              </button>
+
+              <button
+                onClick={() => handleDownload(`bootstrap_${distro}.sh`, scriptContent)}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold bg-cyan-400 hover:bg-cyan-300 text-slate-950 rounded-lg transition-colors shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download .sh</span>
+              </button>
+            </div>
+          </div>
+
+          <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-cyan-300 overflow-x-auto leading-relaxed max-h-[520px]">
+            <code>{scriptContent}</code>
+          </pre>
+
+          {/* Quick Execution Tip */}
+          <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-1">
+            <span className="font-semibold text-slate-300 block">How to run on your fresh Linux system:</span>
+            <code className="text-emerald-300 font-mono block">
+              bash bootstrap_{distro}.sh
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

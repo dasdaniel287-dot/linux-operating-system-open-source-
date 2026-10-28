@@ -1,0 +1,6 @@
+{
+  "name": "OpenLinux GitForge",
+  "description": "Interactive Linux OS installation architect, GitHub open-source software catalog, compilation simulator, and automated bash installer generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
