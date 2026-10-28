@@ -229,5 +229,186 @@ Resolving deltas: 100% (8210/8210), done.
 ✓ Fast regex search engine ready on Linux!`
       }
     ]
+  },
+  {
+    id: 'ollama-local-ai',
+    title: 'Deploy Ollama & Local AI LLMs on Linux',
+    duration: '3 min',
+    difficulty: 'Beginner',
+    summary: 'Install Ollama via official Linux script, verify GPU acceleration, pull a lightweight model, and test prompts.',
+    steps: [
+      {
+        id: 'ol1',
+        instruction: 'Install Ollama using the official Linux installation script:',
+        expectedCommandRegex: /^curl\s+-fsSL\s+https:\/\/ollama\.com\/install\.sh\s+\|\s+(sudo\s+)?sh/i,
+        hint: 'Type: curl -fsSL https://ollama.com/install.sh | sh',
+        output: `>>> Downloading ollama...
+######################################################################## 100.0%
+>>> Installing ollama to /usr/local/bin...
+>>> Creating ollama user and group...
+>>> Adding current user to ollama group...
+>>> Creating systemd service file...
+>>> Enabling and starting ollama service...
+Created symlink /etc/systemd/system/default.target.wants/ollama.service → /etc/systemd/system/ollama.service.
+>>> NVIDIA CUDA / AMD ROCm GPU compute detected: CUDA 12.4
+✓ Ollama daemon is active and running on port 11434`
+      },
+      {
+        id: 'ol2',
+        instruction: 'Verify the installed Ollama CLI version:',
+        expectedCommandRegex: /^ollama\s+--version/i,
+        hint: 'Type: ollama --version',
+        output: `ollama version is 0.4.7`
+      },
+      {
+        id: 'ol3',
+        instruction: 'Test running a prompt with a fast local language model:',
+        expectedCommandRegex: /^ollama\s+run\s+(llama3|mistral|phi3|qwen|tinyllama).*/i,
+        hint: 'Type: ollama run llama3 "Why run Linux on your workstation?"',
+        output: `pulling manifest 
+pulling 6a079f3ced59... 100% ▕████████████████▏ 4.7 GB                         
+verifying sha256 digest 
+writing manifest 
+removing any unused layers 
+success 
+Running Linux provides complete kernel control, zero telemetry bloatware, native POSIX terminal integration, and supreme containerized Docker/Kubernetes development performance!
+✓ Local LLM inference executed in 1.4s (64.2 tokens/sec)!`
+      }
+    ]
+  },
+  {
+    id: 'neovim-source-build',
+    title: 'Build Neovim from Source with Ninja',
+    duration: '5 min',
+    difficulty: 'Advanced',
+    summary: 'Clone Neovim repository, switch to stable branch, and build with Ninja & CMake for an ultra-fast Lua editor.',
+    steps: [
+      {
+        id: 'nv1',
+        instruction: 'Clone the Neovim source code repository from GitHub:',
+        expectedCommandRegex: /^git\s+clone\s+https:\/\/github\.com\/neovim\/neovim(\.git)?/i,
+        hint: 'Type: git clone https://github.com/neovim/neovim.git',
+        output: `Cloning into 'neovim'...
+remote: Enumerating objects: 184500, done.
+remote: Counting objects: 100% (910/910), done.
+Receiving objects: 100% (184500/184500), 78.40 MiB | 18.20 MiB/s, done.
+Resolving deltas: 100% (138200/138200), done.
+✓ Neovim cloned successfully`,
+        fileChanges: [{ path: '~/neovim' }]
+      },
+      {
+        id: 'nv2',
+        instruction: 'Checkout the official stable release tag:',
+        expectedCommandRegex: /(cd\s+neovim(\s*&&\s*)?)?git\s+checkout\s+stable/i,
+        hint: 'Type: cd neovim && git checkout stable',
+        output: `Branch 'stable' set up to track remote branch 'stable' from 'origin'.
+Switched to a new branch 'stable'
+HEAD is now at v0.10.2`
+      },
+      {
+        id: 'nv3',
+        instruction: 'Compile Neovim with RelWithDebInfo profile and Ninja build system:',
+        expectedCommandRegex: /make\s+CMAKE_BUILD_TYPE=RelWithDebInfo(\s+CMAKE_GENERATOR=Ninja)?/i,
+        hint: 'Type: make CMAKE_BUILD_TYPE=RelWithDebInfo CMAKE_GENERATOR=Ninja',
+        output: `[1/624] Building C object src/nvim/CMakeFiles/nvim_bin.dir/main.c.o
+[240/624] Generating syntax and Lua embedded runtime objects
+[480/624] Building Treesitter query parsers
+[624/624] Linking C executable bin/nvim
+✓ Compilation successful: bin/nvim ready`
+      },
+      {
+        id: 'nv4',
+        instruction: 'Install Neovim to /usr/local/bin:',
+        expectedCommandRegex: /^(sudo\s+)?make\s+install/i,
+        hint: 'Type: sudo make install',
+        output: `-- Install configuration: "RelWithDebInfo"
+-- Installing: /usr/local/bin/nvim
+-- Installing: /usr/local/share/nvim/runtime
+-- Installing: /usr/local/share/man/man1/nvim.1
+✓ Neovim installed to /usr/local/bin/nvim`
+      },
+      {
+        id: 'nv5',
+        instruction: 'Verify your freshly compiled Neovim editor:',
+        expectedCommandRegex: /^nvim\s+--version/i,
+        hint: 'Type: nvim --version',
+        output: `NVIM v0.10.2
+Build type: RelWithDebInfo
+LuaJIT 2.1.1713484068
+Compilation: /usr/bin/gcc-13 -O2 -g -DNDEBUG
+Features: +acl +iconv +tui
+✓ Modern Lua-powered Neovim editor ready on Linux!`
+      }
+    ]
+  },
+  {
+    id: 'bootable-usb-dd',
+    title: 'Flash Bootable Linux USB with dd & lsblk',
+    duration: '3 min',
+    difficulty: 'Beginner',
+    summary: 'Identify physical USB block devices with lsblk, safely unmount partitions, burn an OS ISO using GNU dd with progress tracking, and sync write buffers.',
+    steps: [
+      {
+        id: 'usb1',
+        instruction: 'List all block storage devices to identify your target USB drive letter (e.g., /dev/sdb):',
+        expectedCommandRegex: /^lsblk(\s+.*)?$/i,
+        hint: 'Type: lsblk',
+        output: `NAME        MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
+nvme0n1     259:0    0   1.8T  0 disk 
+├─nvme0n1p1 259:1    0     1G  0 part /boot/efi
+├─nvme0n1p2 259:2    0   1.8T  0 part /
+└─nvme0n1p3 259:3    0    32G  0 part [SWAP]
+sdb           8:16   1  29.8G  0 disk 
+└─sdb1        8:17   1  29.8G  0 part /media/developer/LINUX_USB
+✓ Target USB flash drive identified: /dev/sdb (29.8 GB)`
+      },
+      {
+        id: 'usb2',
+        instruction: 'Unmount any automatically mounted partitions on /dev/sdb before writing raw blocks:',
+        expectedCommandRegex: /^(sudo\s+)?umount\s+\/dev\/sdb[0-9*]?/i,
+        hint: 'Type: sudo umount /dev/sdb1',
+        output: `[sudo] password for developer: 
+✓ /dev/sdb1 unmounted successfully. Drive is ready for raw block write.`
+      },
+      {
+        id: 'usb3',
+        instruction: 'Burn the Linux ISO image to /dev/sdb using dd with 4MB block size and status progress:',
+        expectedCommandRegex: /^(sudo\s+)?dd\s+if=.*\.iso\s+of=\/dev\/sdb(\s+.*)?/i,
+        hint: 'Type: sudo dd if=ubuntu-24.04-desktop-amd64.iso of=/dev/sdb bs=4M status=progress oflag=sync',
+        output: `1048576000 bytes (1.0 GB, 1000 MiB) copied, 7.82 s, 134 MB/s
+2097152000 bytes (2.1 GB, 2000 MiB) copied, 15.64 s, 134 MB/s
+3145728000 bytes (3.1 GB, 3000 MiB) copied, 23.46 s, 134 MB/s
+4831838208 bytes (4.8 GB, 4.5 GiB) copied, 36.12 s, 134 MB/s
+1152+0 records in
+1152+0 records out
+4831838208 bytes (4.8 GB, 4.5 GiB) copied, 36.211 s, 133 MB/s
+✓ Raw ISO bitstream successfully written to /dev/sdb`
+      },
+      {
+        id: 'usb4',
+        instruction: 'Flush cached write buffers to ensure all data is physically committed to the flash drive:',
+        expectedCommandRegex: /^sync$/i,
+        hint: 'Type: sync',
+        output: `✓ Storage buffers flushed. All dirty blocks committed to NAND flash.`
+      },
+      {
+        id: 'usb5',
+        instruction: 'Inspect the newly written partition layout on /dev/sdb with fdisk or lsblk:',
+        expectedCommandRegex: /^(sudo\s+)?(fdisk\s+-l\s+\/dev\/sdb|lsblk\s+\/dev\/sdb)/i,
+        hint: 'Type: sudo fdisk -l /dev/sdb',
+        output: `Disk /dev/sdb: 29.8 GiB, 32010928128 bytes, 62521344 sectors
+Disk model: Ultra USB 3.0   
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+Disklabel type: gpt
+Disk identifier: B57E6B8D-2E34-4C3D-81F8-AC50C6A72074
+
+Device       Start      End  Sectors  Size Type
+/dev/sdb1       64  9437183  9437120  4.5G Microsoft basic data
+/dev/sdb2  9437184  9447423    10240    5M EFI System
+/dev/sdb3  9447424  9447999      576  288K BIOS boot
+✓ Bootable UEFI/BIOS Linux installation media ready! You can now safely unplug the USB.`
+      }
+    ]
   }
 ];

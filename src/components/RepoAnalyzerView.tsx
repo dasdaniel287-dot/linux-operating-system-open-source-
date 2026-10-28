@@ -10,7 +10,9 @@ import {
   Code2,
   Cpu,
   Shield,
-  FileCode
+  FileCode,
+  Box,
+  Workflow
 } from 'lucide-react';
 
 interface QuickPreset {
@@ -37,6 +39,7 @@ export const RepoAnalyzerView: React.FC = () => {
   const [installDir, setInstallDir] = useState<'/usr/local/bin' | '~/.local/bin'>('/usr/local/bin');
   const [createDesktopEntry, setCreateDesktopEntry] = useState<boolean>(false);
   const [createSystemdUnit, setCreateSystemdUnit] = useState<boolean>(false);
+  const [activeOutputTab, setActiveOutputTab] = useState<'install' | 'docker' | 'github_actions' | 'uninstall'>('install');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // Normalize owner/repo
@@ -53,7 +56,7 @@ export const RepoAnalyzerView: React.FC = () => {
   };
 
   const handleDownload = (filename: string, content: string) => {
-    const blob = new Blob([content], { type: 'text/x-shellscript;charset=utf-8;' });
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -227,6 +230,95 @@ systemctl --user daemon-reload` : ''}
 echo "✓ ${binaryName} successfully uninstalled."
 `;
 
+  const dockerfileContent = `# Multi-stage lightweight Linux container build for ${cleanRepo}
+${buildSystem === 'cargo' ? `FROM rust:1.82-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache musl-dev git
+RUN git clone --depth 1 https://github.com/${cleanRepo}.git .
+RUN cargo build --release --locked
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /app/target/release/${binaryName} /usr/local/bin/${binaryName}
+ENTRYPOINT ["/usr/local/bin/${binaryName}"]` : buildSystem === 'go' ? `FROM golang:1.23-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache git
+RUN git clone --depth 1 https://github.com/${cleanRepo}.git .
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o ${binaryName} .
+
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates
+COPY --from=builder /app/${binaryName} /usr/local/bin/${binaryName}
+ENTRYPOINT ["/usr/local/bin/${binaryName}"]` : `FROM debian:bookworm-slim AS builder
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential cmake git ca-certificates
+RUN git clone --depth 1 https://github.com/${cleanRepo}.git .
+RUN mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc)
+
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/build/${binaryName} /usr/local/bin/${binaryName}
+ENTRYPOINT ["/usr/local/bin/${binaryName}"]`}
+`;
+
+  const githubActionsContent = `name: Build & Release Linux Binaries
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-linux:
+    name: Build Linux x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      ${buildSystem === 'cargo' ? `- name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Build Release Binary
+        run: cargo build --release --locked
+      - name: Package Binary
+        run: |
+          tar -czvf ${binaryName}-linux-x86_64.tar.gz -C target/release ${binaryName}` : buildSystem === 'go' ? `- name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Compile Go Binary
+        run: go build -ldflags="-s -w" -o ${binaryName} .
+      - name: Package Binary
+        run: tar -czvf ${binaryName}-linux-x86_64.tar.gz ${binaryName}` : `- name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+      - name: Compile with CMake
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          make -j$(nproc)
+      - name: Package Binary
+        run: tar -czvf ${binaryName}-linux-x86_64.tar.gz -C build ${binaryName}`}
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${binaryName}-linux-x86_64.tar.gz
+`;
+
+  const getActiveTabContent = () => {
+    switch (activeOutputTab) {
+      case 'install':
+        return { content: generatedScript, filename: `install_${binaryName}.sh`, lang: 'bash' };
+      case 'docker':
+        return { content: dockerfileContent, filename: 'Dockerfile', lang: 'dockerfile' };
+      case 'github_actions':
+        return { content: githubActionsContent, filename: 'build-linux.yml', lang: 'yaml' };
+      case 'uninstall':
+        return { content: uninstallerScript, filename: `uninstall_${binaryName}.sh`, lang: 'bash' };
+    }
+  };
+
+  const currentTabInfo = getActiveTabContent();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Header */}
@@ -234,13 +326,13 @@ echo "✓ ${binaryName} successfully uninstalled."
         <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider">
           <span>Universal GitHub Builder</span>
           <span aria-hidden="true">·</span>
-          <span>Automated Bash Script Generator</span>
+          <span>Automated Bash, Docker & CI Generator</span>
         </div>
         <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight mt-1">
           GitHub Repository Installer Architect
         </h1>
         <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-          Enter any open-source GitHub repository URL or slug to generate an idempotent, production-grade Linux bash installer script with automatic dependency traps and verification.
+          Enter any open-source GitHub repository URL or slug to generate an idempotent, production-grade Linux bash installer script, Dockerfile, or GitHub Actions CI workflow.
         </p>
       </div>
 
@@ -391,69 +483,97 @@ echo "✓ ${binaryName} successfully uninstalled."
           </div>
         </div>
 
-        {/* Generated Script Viewer */}
+        {/* Generated Output Tabs & Code Viewer */}
         <div className="lg:col-span-7 bg-slate-900/50 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-300">
-              <FileCode className="w-4 h-4 text-cyan-400" />
-              <span>install_{binaryName}.sh</span>
+          {/* Output Selector Tabs */}
+          <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <button
+                onClick={() => setActiveOutputTab('install')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  activeOutputTab === 'install'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                <span>install.sh</span>
+              </button>
+              <button
+                onClick={() => setActiveOutputTab('docker')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  activeOutputTab === 'docker'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Box className="w-3.5 h-3.5" />
+                <span>Dockerfile</span>
+              </button>
+              <button
+                onClick={() => setActiveOutputTab('github_actions')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  activeOutputTab === 'github_actions'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Workflow className="w-3.5 h-3.5" />
+                <span>GitHub Actions CI</span>
+              </button>
+              <button
+                onClick={() => setActiveOutputTab('uninstall')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  activeOutputTab === 'uninstall'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                <span>uninstall.sh</span>
+              </button>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={() => handleCopy(generatedScript, 'script')}
+                onClick={() => handleCopy(currentTabInfo.content, activeOutputTab)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700"
               >
-                {copiedKey === 'script' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedKey === 'script' ? 'Copied' : 'Copy Bash'}</span>
+                {copiedKey === activeOutputTab ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedKey === activeOutputTab ? 'Copied' : 'Copy'}</span>
               </button>
 
               <button
-                onClick={() => handleDownload(`install_${binaryName}.sh`, generatedScript)}
+                onClick={() => handleDownload(currentTabInfo.filename, currentTabInfo.content)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-cyan-400 hover:bg-cyan-300 text-slate-950 rounded-lg transition-colors shadow-sm"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Download .sh</span>
+                <span>Save</span>
               </button>
             </div>
           </div>
 
           <pre className="p-4 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-cyan-300 overflow-x-auto leading-relaxed max-h-[500px]">
-            <code>{generatedScript}</code>
+            <code>{currentTabInfo.content}</code>
           </pre>
 
-          {/* Quick One-Liner execution command */}
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1 text-xs">
-            <div className="flex items-center justify-between text-slate-400">
-              <span className="font-semibold text-slate-300">Run on your Linux machine:</span>
-              <button
-                onClick={() => handleCopy(`bash install_${binaryName}.sh`, 'oneliner')}
-                className="text-cyan-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
-              >
-                {copiedKey === 'oneliner' ? 'Copied!' : 'Copy command'}
-              </button>
+          {/* Quick Execution Tip for Install script */}
+          {activeOutputTab === 'install' && (
+            <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1 text-xs">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="font-semibold text-slate-300">Run on your Linux machine:</span>
+                <button
+                  onClick={() => handleCopy(`bash install_${binaryName}.sh`, 'oneliner')}
+                  className="text-cyan-400 hover:underline flex items-center gap-1 font-mono text-[11px]"
+                >
+                  {copiedKey === 'oneliner' ? 'Copied!' : 'Copy command'}
+                </button>
+              </div>
+              <code className="text-emerald-300 font-mono block">
+                chmod +x install_{binaryName}.sh && ./install_{binaryName}.sh
+              </code>
             </div>
-            <code className="text-emerald-300 font-mono block">
-              chmod +x install_{binaryName}.sh && ./install_{binaryName}.sh
-            </code>
-          </div>
-
-          {/* Uninstaller snippet */}
-          <div className="pt-2">
-            <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
-              <span>Clean Uninstaller:</span>
-              <button
-                onClick={() => handleCopy(uninstallerScript, 'uninstall')}
-                className="text-slate-400 hover:text-cyan-400 transition-colors flex items-center gap-1"
-              >
-                {copiedKey === 'uninstall' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                <span>{copiedKey === 'uninstall' ? 'Copied' : 'Copy'}</span>
-              </button>
-            </div>
-            <pre className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-rose-300 overflow-x-auto">
-              <code>{uninstallerScript}</code>
-            </pre>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -30,9 +30,12 @@ const AVAILABLE_TOOLS: ToolOption[] = [
   { id: 'fzf', name: 'FZF Fuzzy Finder', category: 'Search', desc: 'Interactive command-line fuzzy finder', defaultSelected: true },
   { id: 'bat', name: 'Bat (Cat with syntax)', category: 'Utility', desc: 'Syntax-highlighted file viewer with git integration', defaultSelected: true },
   { id: 'eza', name: 'Eza (Modern ls)', category: 'Utility', desc: 'Modern replacement for ls with icons and git status', defaultSelected: true },
+  { id: 'zoxide', name: 'Zoxide (Smart cd)', category: 'Utility', desc: 'Smarter directory jump command in Rust', defaultSelected: true },
+  { id: 'alacritty', name: 'Alacritty Terminal', category: 'Terminal', desc: 'GPU-accelerated terminal emulator in Rust', defaultSelected: false },
   { id: 'lazygit', name: 'Lazygit Terminal UI', category: 'VCS', desc: 'Terminal user interface for git commands', defaultSelected: false },
   { id: 'docker', name: 'Docker Community Edition', category: 'Containers', desc: 'Container engine with Docker Compose v2', defaultSelected: false },
   { id: 'ollama', name: 'Ollama Local AI', category: 'AI', desc: 'Run Llama 3, DeepSeek, and Mistral LLMs locally', defaultSelected: false },
+  { id: 'hyprland', name: 'Hyprland Wayland Compositor', category: 'Desktop', desc: 'Dynamic tiling Wayland compositor with fluid animations', defaultSelected: false },
 ];
 
 export const BootstrapBuilderView: React.FC = () => {
@@ -81,7 +84,7 @@ export const BootstrapBuilderView: React.FC = () => {
     if (distro === 'ubuntu') {
       pkgUpdateCmd = 'sudo apt update && sudo apt upgrade -y';
       pkgInstallCmd = 'sudo apt install -y';
-      buildToolsCmd = 'sudo apt install -y build-essential cmake ninja-build curl wget git pkg-config';
+      buildToolsCmd = 'sudo apt install -y build-essential cmake ninja-build curl wget git pkg-config libssl-dev';
     } else if (distro === 'fedora') {
       pkgUpdateCmd = 'sudo dnf upgrade --refresh -y';
       pkgInstallCmd = 'sudo dnf install -y';
@@ -89,7 +92,7 @@ export const BootstrapBuilderView: React.FC = () => {
     } else if (distro === 'arch') {
       pkgUpdateCmd = 'sudo pacman -Syu --noconfirm';
       pkgInstallCmd = 'sudo pacman -S --noconfirm --needed';
-      buildToolsCmd = 'sudo pacman -S --noconfirm --needed base-devel git cmake ninja curl';
+      buildToolsCmd = 'sudo pacman -S --noconfirm --needed base-devel git cmake ninja curl rust go';
     } else {
       pkgUpdateCmd = 'sudo apk update && sudo apk upgrade';
       pkgInstallCmd = 'sudo apk add';
@@ -116,7 +119,7 @@ echo -e "\${CYAN}=====================================================\${NC}"
 echo -e "\${CYAN}  Initiating Linux Workstation Setup for ${distro.toUpperCase()}\${NC}"
 echo -e "\${CYAN}=====================================================\${NC}"
 
-# Ensure ~/.local/bin exists and is exported
+# Ensure ~/.local/bin exists and is exported in PATH
 mkdir -p "$HOME/.local/bin"
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
@@ -198,6 +201,21 @@ ${distro === 'arch' ? 'sudo pacman -S --noconfirm eza' :
 `);
     }
 
+    if (selectedToolIds.has('zoxide')) {
+      lines.push(`# Zoxide
+echo "Installing Zoxide smart cd..."
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+echo 'eval "$(zoxide init bash)"' >> "$HOME/.bashrc"
+`);
+    }
+
+    if (selectedToolIds.has('alacritty')) {
+      lines.push(`# Alacritty
+echo "Installing Alacritty terminal..."
+${pkgInstallCmd} alacritty
+`);
+    }
+
     if (selectedToolIds.has('starship')) {
       lines.push(`# Starship Prompt
 echo "Installing Starship prompt..."
@@ -218,6 +236,15 @@ sudo usermod -aG docker "$USER"
       lines.push(`# Ollama AI
 echo "Installing Ollama local LLM engine..."
 curl -fsSL https://ollama.com/install.sh | sh
+`);
+    }
+
+    if (selectedToolIds.has('hyprland')) {
+      lines.push(`# Hyprland
+echo "Installing Hyprland Wayland compositor..."
+${distro === 'arch' ? 'sudo pacman -S --noconfirm hyprland kitty waybar wofi' :
+  distro === 'fedora' ? 'sudo dnf copr enable solopasha/hyprland -y && sudo dnf install -y hyprland' :
+  'echo "Hyprland is best installed via official PPA on Ubuntu or native pacman on Arch."'}
 `);
     }
 

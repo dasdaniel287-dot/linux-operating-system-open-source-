@@ -1,0 +1,18 @@
+# /etc/inittab for WebLinux
+# Configuration for busybox init in WebAssembly virtual environment
+
+::sysinit:/etc/init.d/rcS
+
+# Start an interactive shell directly on the COM1 serial console (/dev/ttyS0)
+# This connects straight into xterm.js in the browser
+ttyS0::respawn:/bin/sh -l
+
+# Local tty1 console fallback for VGA graphics mode
+tty1::respawn:/bin/sh -l
+
+# Stuff to do when restarting the init process
+::restart:/sbin/init
+
+# Stuff to do before rebooting
+::ctrlaltdel:/sbin/reboot
+::shutdown:/bin/umount -a -r

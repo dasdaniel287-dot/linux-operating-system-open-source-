@@ -510,10 +510,20 @@ export const DistroGuideView: React.FC<DistroGuideViewProps> = ({
                 Direct block copy using standard coreutils. Always verify your drive letter with <code className="text-cyan-300">lsblk</code> first.
               </p>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 space-y-2">
               <pre className="p-2 bg-slate-900 rounded text-[11px] font-mono text-cyan-300 overflow-x-auto">
                 <code>{currentDistro.usbGuide.ddCommand}</code>
               </pre>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-slate-500 font-mono">GNU coreutils (/usr/bin/dd)</span>
+                <button
+                  onClick={() => handleCopy(currentDistro.usbGuide.ddCommand, 'dd-cmd')}
+                  className="flex items-center gap-1 text-slate-400 hover:text-cyan-400 transition-colors"
+                >
+                  {copiedKey === 'dd-cmd' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedKey === 'dd-cmd' ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -528,6 +538,62 @@ export const DistroGuideView: React.FC<DistroGuideViewProps> = ({
             </div>
             <div className="pt-2">
               <span className="text-xs text-slate-400 font-mono">BIOS Boot Key: F12 / F11 / Del</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modern Desktop & Wayland Compositor Showcase Graphic */}
+      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-cyan-400 uppercase tracking-wider">
+              <span>Display Server & Compositor Architecture</span>
+              <span aria-hidden="true">·</span>
+              <span>Wayland Protocol</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-100 mt-1">
+              The Modern Linux Developer Workstation Experience
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+              Modern distributions (Fedora, Arch, Ubuntu 24.04) run pure Wayland with tear-free rendering, fractional scaling, PipeWire audio graphs, and dynamic tiling window managers.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-500/30 px-3 py-1.5 rounded-lg shrink-0">
+            <span>Wayland + PipeWire + Vulkan</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-7 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 group">
+            <img 
+              src="/src/assets/images/wayland_desktop_compositor_1793210648772.jpg" 
+              alt="Modern Linux Wayland Desktop and Dynamic Tiling Workstation" 
+              className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-300"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          <div className="lg:col-span-5 space-y-4 text-xs">
+            <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-1.5">
+              <h3 className="text-sm font-semibold text-slate-200">1. Wayland Protocol Supremacy</h3>
+              <p className="text-slate-400 leading-relaxed">
+                Replaces legacy 35-year-old X11 with strict client sandboxing, per-monitor mixed refresh rates (e.g. 144Hz + 60Hz), and zero screen tearing by design.
+              </p>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-1.5">
+              <h3 className="text-sm font-semibold text-slate-200">2. Dynamic Tiling (Hyprland / Sway)</h3>
+              <p className="text-slate-400 leading-relaxed">
+                Automatic window tree layout tiles code editors, terminals, and web views without overlapping, controlled purely via keyboard shortcuts (Super + H/J/K/L).
+              </p>
+            </div>
+
+            <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-1.5">
+              <h3 className="text-sm font-semibold text-slate-200">3. PipeWire Low-Latency Audio</h3>
+              <p className="text-slate-400 leading-relaxed">
+                Unifies PulseAudio, JACK, and ALSA with sub-5ms pro-audio streaming, Bluetooth LDAC/aptX codecs, and sandboxed screen sharing via WebRTC portals.
+              </p>
             </div>
           </div>
         </div>

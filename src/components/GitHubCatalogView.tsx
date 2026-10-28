@@ -11,7 +11,8 @@ import {
   Wrench, 
   Sparkles,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Maximize2
 } from 'lucide-react';
 
 interface GitHubCatalogViewProps {
@@ -34,6 +35,7 @@ export const GitHubCatalogView: React.FC<GitHubCatalogViewProps> = ({ onSimulate
   const [selectedDistro, setSelectedDistro] = useState<'ubuntu' | 'fedora' | 'arch' | 'alpine'>('ubuntu');
   const [activeProject, setActiveProject] = useState<OpenSourceProject | null>(null);
   const [installMethod, setInstallMethod] = useState<'source' | 'release' | 'package'>('source');
+  const [showSchematicZoom, setShowSchematicZoom] = useState<boolean>(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const handleCopy = (text: string, key: string) => {
@@ -90,6 +92,75 @@ export const GitHubCatalogView: React.FC<GitHubCatalogViewProps> = ({ onSimulate
         </div>
       </div>
 
+      {/* Visual Architectural Blueprint: The Linux Compilation Pipeline */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-6 md:p-8 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider block">
+              Architecture Blueprint
+            </span>
+            <h2 className="text-lg font-bold text-slate-100 mt-0.5">
+              Linux Open-Source Compilation & Toolchain Pipeline
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-2xl">
+              Visual engineering schematic showing the end-to-end dataflow from GitHub repository clone through CMake/Ninja build files, GCC & Rust LLVM compilation, GNU Linker, to installation in <code className="text-cyan-300 font-mono">/usr/local/bin</code>.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSchematicZoom(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors border border-slate-700 shrink-0 self-start sm:self-auto"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+            <span>Inspect Blueprint</span>
+          </button>
+        </div>
+
+        <div 
+          onClick={() => setShowSchematicZoom(true)}
+          className="relative rounded-xl overflow-hidden border border-slate-800/80 bg-slate-950 cursor-pointer group max-h-72"
+        >
+          <img 
+            src="/src/assets/images/linux_compiler_pipeline_1793210648692.jpg" 
+            alt="Linux Open Source Compilation Pipeline Technical Schematic"
+            className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-300"
+            referrerPolicy="no-referrer"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-4">
+            <span className="text-xs font-mono text-cyan-300 flex items-center gap-2">
+              <span>Click to view high-resolution engineering blueprint</span>
+              <span className="text-slate-400 font-sans">· Git → Build System → GCC/Rust → Linker → /usr/local/bin</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Blueprint Zoom Modal */}
+      {showSchematicZoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+              <h3 className="text-base font-bold text-slate-100">
+                Linux Open Source Compilation Pipeline Schematic
+              </h3>
+              <button
+                onClick={() => setShowSchematicZoom(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-100 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 bg-slate-950 flex items-center justify-center">
+              <img 
+                src="/src/assets/images/linux_compiler_pipeline_1793210648692.jpg" 
+                alt="Linux Open Source Compilation Pipeline Full Schematic"
+                className="w-full h-auto object-contain rounded-lg border border-slate-800"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search & Category Filter Controls */}
       <div className="space-y-4">
         <div className="relative">
@@ -124,7 +195,6 @@ export const GitHubCatalogView: React.FC<GitHubCatalogViewProps> = ({ onSimulate
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredProjects.map(project => {
-          const quickInstall = project.installViaPackage[selectedDistro] || project.installFromRelease[0];
           return (
             <div
               key={project.id}

@@ -465,6 +465,118 @@ export const OPEN_SOURCE_PROJECTS: OpenSourceProject[] = [
     binaryPath: '/usr/local/bin/eza'
   },
   {
+    id: 'zoxide',
+    name: 'Zoxide (Smarter cd)',
+    repo: 'ajeetdsouza/zoxide',
+    githubUrl: 'https://github.com/ajeetdsouza/zoxide',
+    stars: 23400,
+    category: 'cli-tools',
+    license: 'MIT',
+    description: 'A smarter cd command inspired by z and autojump, written in Rust. It remembers your most used directories.',
+    whyUseIt: 'Jump to any deep nested directory instantly with "z project" instead of typing 6 directory levels.',
+    buildSystem: 'cargo',
+    prerequisites: {
+      ubuntu: 'sudo apt install -y cargo rustc git',
+      fedora: 'sudo dnf install -y cargo rust git',
+      arch: 'sudo pacman -S --needed rust git',
+      alpine: 'sudo apk add cargo rust git'
+    },
+    installFromSource: [
+      'git clone https://github.com/ajeetdsouza/zoxide.git',
+      'cd zoxide',
+      'cargo build --release',
+      'sudo install -m 755 target/release/zoxide /usr/local/bin/'
+    ],
+    installFromRelease: [
+      'curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh'
+    ],
+    installViaPackage: {
+      ubuntu: 'sudo apt install -y zoxide',
+      fedora: 'sudo dnf install -y zoxide',
+      arch: 'sudo pacman -S --noconfirm zoxide',
+      alpine: 'sudo apk add zoxide'
+    },
+    verifyCommand: 'zoxide --version',
+    uninstallCommand: 'sudo rm -f /usr/local/bin/zoxide ~/.local/bin/zoxide',
+    binaryPath: '/usr/local/bin/zoxide'
+  },
+  {
+    id: 'hyprland',
+    name: 'Hyprland Compositor',
+    repo: 'hyprwm/Hyprland',
+    githubUrl: 'https://github.com/hyprwm/Hyprland',
+    stars: 26800,
+    category: 'shells-terminals',
+    license: 'BSD-3-Clause',
+    description: 'A dynamic tiling Wayland compositor with fluid animations, rounded corners, dual-borders, and blur.',
+    whyUseIt: 'The reigning crown jewel of modern Linux desktop ricing with custom C++ shaders and socket IPC.',
+    buildSystem: 'cmake',
+    prerequisites: {
+      ubuntu: 'sudo apt install -y ninja-build cmake meson libwayland-dev wayland-protocols libinput-dev libxkbcommon-dev',
+      fedora: 'sudo dnf install -y ninja-build cmake meson wayland-devel wayland-protocols-devel libinput-devel',
+      arch: 'sudo pacman -S --needed base-devel cmake ninja wayland wayland-protocols libinput',
+      alpine: 'sudo apk add build-base cmake ninja wayland-dev wayland-protocols libinput-dev'
+    },
+    installFromSource: [
+      'git clone --recursive https://github.com/hyprwm/Hyprland',
+      'cd Hyprland',
+      'make all',
+      'sudo make install'
+    ],
+    installFromRelease: [
+      '# In Arch Linux or Fedora COPR:',
+      'sudo pacman -S --noconfirm hyprland # or sudo dnf copr enable solopasha/hyprland && sudo dnf install -y hyprland'
+    ],
+    installViaPackage: {
+      ubuntu: '# Hyprland requires PPA on Ubuntu 24.04:\nsudo add-apt-repository ppa:hyprwm/hyprland -y && sudo apt update && sudo apt install -y hyprland',
+      fedora: 'sudo dnf copr enable solopasha/hyprland -y && sudo dnf install -y hyprland',
+      arch: 'sudo pacman -S --noconfirm hyprland kitty waybar wofi',
+      alpine: 'sudo apk add hyprland'
+    },
+    verifyCommand: 'Hyprland --version',
+    uninstallCommand: 'sudo rm -f /usr/local/bin/Hyprland /usr/local/share/wayland-sessions/hyprland.desktop',
+    binaryPath: '/usr/local/bin/Hyprland'
+  },
+  {
+    id: 'alacritty',
+    name: 'Alacritty',
+    repo: 'alacritty/alacritty',
+    githubUrl: 'https://github.com/alacritty/alacritty',
+    stars: 56900,
+    category: 'shells-terminals',
+    license: 'Apache-2.0',
+    description: 'A cross-platform, OpenGL-accelerated terminal emulator written in Rust with sensible defaults.',
+    whyUseIt: 'Extreme rendering throughput with negligible latency, zero bloat, and simple TOML configuration.',
+    buildSystem: 'cargo',
+    prerequisites: {
+      ubuntu: 'sudo apt install -y cmake pkg-config libfreetype6-dev libfontconfig1-dev libxcb-xfixes0-dev libxkbcommon-dev python3',
+      fedora: 'sudo dnf install -y cmake freetype-devel fontconfig-devel libxcb-devel libxkbcommon-devel python3',
+      arch: 'sudo pacman -S --needed cmake freetype2 fontconfig pkg-config make libxcb libxkbcommon python',
+      alpine: 'sudo apk add cmake freetype-dev fontconfig-dev pkgconf libxcb-dev libxkbcommon-dev python3'
+    },
+    installFromSource: [
+      'git clone https://github.com/alacritty/alacritty.git',
+      'cd alacritty',
+      'cargo build --release',
+      'sudo install -m 755 target/release/alacritty /usr/local/bin/'
+    ],
+    installFromRelease: [
+      'TAG=$(curl -s https://api.github.com/repos/alacritty/alacritty/releases/latest | grep "tag_name" | cut -d\'"\' -f4)',
+      'curl -LO "https://github.com/alacritty/alacritty/releases/download/${TAG}/Alacritty-${TAG}-x86_64.AppImage"',
+      'chmod +x Alacritty-${TAG}-x86_64.AppImage',
+      'sudo mv Alacritty-${TAG}-x86_64.AppImage /usr/local/bin/alacritty'
+    ],
+    installViaPackage: {
+      ubuntu: 'sudo apt install -y alacritty',
+      fedora: 'sudo dnf install -y alacritty',
+      arch: 'sudo pacman -S --noconfirm alacritty',
+      alpine: 'sudo apk add alacritty'
+    },
+    verifyCommand: 'alacritty --version',
+    uninstallCommand: 'sudo rm -f /usr/local/bin/alacritty',
+    binaryPath: '/usr/local/bin/alacritty'
+  },
+  {
     id: 'docker-ce',
     name: 'Docker Community Edition',
     repo: 'moby/moby',
